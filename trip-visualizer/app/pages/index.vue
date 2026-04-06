@@ -31,6 +31,8 @@ type Trip = {
 };
 
 const DEFAULT_CENTER: Coordinates = { lat: 3.139, lng: 101.6869 };
+const MALAYSIA_TIMEZONE = "Asia/Kuala_Lumpur";
+const MALAYSIA_LOCALE = "en-MY";
 
 const trips = ref<Trip[]>([]);
 const selectedDate = ref<string | null>(null);
@@ -291,6 +293,84 @@ function sanitize(value: string): string {
   return value.replace(/[\u00a0\u202f]/g, " ").trim();
 }
 
+function convertToMalaysia(
+  dateStr: string,
+  timeStr: string,
+): {
+  date: string;
+  time: string;
+} {
+  const sanitizedDate = sanitize(dateStr);
+  const sanitizedTime = sanitize(timeStr);
+  const fallback = {
+    date: sanitizedDate || dateStr,
+    time: sanitizedTime || timeStr,
+  };
+
+  const [dayStr, monthStr, yearStr] = sanitizedDate.split("/");
+  const day = Number(dayStr);
+  const month = Number(monthStr);
+  const year = Number(yearStr);
+  if (!day || !month || !year) {
+    return fallback;
+  }
+
+  const normalizedTime = sanitizedTime.replace(/\s+/g, " ").toUpperCase();
+  const timeMatch = normalizedTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (!timeMatch) {
+    return fallback;
+  }
+
+  let hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  const period = timeMatch[3];
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return fallback;
+  }
+
+  hours %= 12;
+  if (period === "PM") {
+    hours += 12;
+  }
+
+  const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+  if (Number.isNaN(utcDate.getTime())) {
+    return fallback;
+  }
+
+  const formatter = new Intl.DateTimeFormat(MALAYSIA_LOCALE, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: MALAYSIA_TIMEZONE,
+  });
+
+  const parts = formatter.formatToParts(utcDate);
+  const partMap = parts.reduce<Record<string, string>>((acc, part) => {
+    if (part.type !== "literal") {
+      acc[part.type] = part.value;
+    }
+    return acc;
+  }, {});
+
+  const localDate = [
+    partMap.day ?? dayStr.padStart(2, "0"),
+    partMap.month ?? monthStr.padStart(2, "0"),
+    partMap.year ?? yearStr,
+  ].join("/");
+
+  const periodLabel = partMap.dayPeriod ? partMap.dayPeriod.toUpperCase() : "";
+  const localTime = `${partMap.hour ?? String(hours || 12)}:${partMap.minute ?? minutes.toString().padStart(2, "0")}${periodLabel ? ` ${periodLabel}` : ""}`;
+
+  return {
+    date: localDate,
+    time: localTime,
+  };
+}
+
 function normalizeHeader(value: string): string {
   return sanitize(value).toLowerCase().replace(/\s+/g, " ");
 }
@@ -316,17 +396,25 @@ function buildTripFromRow(
     }
     return "";
   };
+  const rawDate = fetchValue("date");
+  const rawDepartureTime = fetchValue("time of departure");
+  const rawArrivalTime = fetchValue("time of arrival");
+
+  const departureLocal = convertToMalaysia(rawDate, rawDepartureTime);
+  const arrivalLocal = convertToMalaysia(rawDate, rawArrivalTime);
+
   const departureCoords = parseCoordinates(
     fetchValue("address of departure", "departure address", "origin"),
   );
   const destinationCoords = parseCoordinates(
     fetchValue("destination address", "destination", "destination coordinate"),
   );
+
   return {
     id: index,
-    date: fetchValue("date"),
-    departureTime: fetchValue("time of departure"),
-    arrivalTime: fetchValue("time of arrival"),
+    date: departureLocal.date,
+    departureTime: departureLocal.time,
+    arrivalTime: arrivalLocal.time,
     duration: fetchValue("time (hr:min)"),
     departureCoords,
     destinationCoords,
@@ -586,7 +674,7 @@ function formatCoords(coords: Coordinates): string {
             </h3>
           </template>
 
-          <UTable :columns="tableColumns" :rows="tableRows" />
+          <UTable :data="tableRows" />
         </UCard>
 
         <div
