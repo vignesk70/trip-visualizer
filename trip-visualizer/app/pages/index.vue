@@ -460,76 +460,167 @@ function formatCoords(coords: Coordinates): string {
 </script>
 
 <template>
-  <UContainer class="space-y-8 py-10">
-    <UPageHero
-      title="Trip Visualizer"
-      description="Upload a semicolon-delimited XLSX file to review daily trips and explore them on an interactive map."
-      :links="[]"
-    />
-
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Upload trip log</h2>
-          <span class="text-sm text-muted"> Accepted format: .xlsx </span>
-        </div>
-      </template>
-
-      <div
-        class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+  <div
+    class="min-h-screen bg-gradient-to-b from-blue-950 via-slate-950 to-slate-900"
+  >
+    <UContainer class="py-12 space-y-10">
+      <section
+        class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] items-start"
       >
-        <p class="text-sm text-muted">
-          Select an XLSX file exported with semicolon-separated values. The
-          first sheet will be processed automatically. This file supports the
-          MyPeugeot trip log format, but any spreadsheet with the expected
-          headers can be used.
-        </p>
-
-        <div class="flex items-center gap-3">
-          <UButton
-            color="primary"
-            icon="i-lucide-upload"
-            :loading="isLoading"
-            @click="triggerFileInput"
-          >
-            Choose file
-          </UButton>
-          <span v-if="isLoading" class="text-sm text-muted"> Processing… </span>
+        <div class="space-y-6 text-white">
+          <div class="flex flex-wrap items-center gap-3">
+            <UBadge
+              color="primary"
+              variant="subtle"
+              class="uppercase tracking-wide"
+            >
+              Modern
+            </UBadge>
+            <span class="text-sm text-blue-200"
+              >Insights for every journey</span
+            >
+          </div>
+          <h1 class="text-4xl font-semibold leading-tight sm:text-5xl">
+            Visualize every kilometer of your trip history
+          </h1>
+          <p class="text-lg text-blue-100 sm:max-w-2xl">
+            Upload your MyPeugeot export to plot routes, uncover driving
+            patterns, and keep tabs on fuel efficiency with a sleek, interactive
+            dashboard.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <UButton
+              color="primary"
+              size="lg"
+              icon="i-lucide-upload"
+              @click="triggerFileInput"
+            >
+              Upload log
+            </UButton>
+            <UButton
+              variant="ghost"
+              color="primary"
+              size="lg"
+              @click="triggerFileInput"
+            >
+              Choose different file
+            </UButton>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="rounded-2xl bg-white/10 backdrop-blur p-4 shadow-lg">
+              <p class="text-sm text-blue-200">Trips analysed</p>
+              <p class="text-2xl font-semibold">{{ trips.length }}</p>
+            </div>
+            <div class="rounded-2xl bg-white/10 backdrop-blur p-4 shadow-lg">
+              <p class="text-sm text-blue-200">Distance logged</p>
+              <p class="text-2xl font-semibold">
+                {{ distanceTotal.toFixed(1) }} km
+              </p>
+            </div>
+            <div class="rounded-2xl bg-white/10 backdrop-blur p-4 shadow-lg">
+              <p class="text-sm text-blue-200">Unique days</p>
+              <p class="text-2xl font-semibold">{{ dates.length }}</p>
+            </div>
+          </div>
         </div>
 
-        <input
-          ref="fileInput"
-          type="file"
-          class="hidden"
-          accept=".xlsx,.xls"
-          @change="handleFileChange"
-        />
-      </div>
-
-      <ul class="mt-4 space-y-1 text-sm text-muted">
-        <li>
-          Expected headers: Date, Time of Departure, Time of Arrival, Time
-          (hr:min), Address of Departure, Destination Address, Distance (km),
-          Mileage on odometer (km), Avg. consumption (l/100km), Price of fuel
-          (MYR/l), Cost (MYR), Category.
-        </li>
-      </ul>
-    </UCard>
-
-    <UAlert
-      v-if="errorMessage"
-      color="error"
-      icon="i-lucide-alert-triangle"
-      variant="soft"
-    >
-      {{ errorMessage }}
-    </UAlert>
-
-    <div v-if="trips.length" class="grid gap-6 lg:grid-cols-[320px_1fr]">
-      <div class="space-y-4">
-        <UCard>
+        <UCard
+          class="border border-white/10 bg-gradient-to-br from-blue-900/60 to-slate-900/40 backdrop-blur"
+        >
           <template #header>
-            <h3 class="text-base font-semibold">Dates</h3>
+            <div>
+              <h2 class="text-xl font-semibold text-white">
+                Upload a trip log
+              </h2>
+              <p class="text-sm text-blue-200">
+                Drop in your semicolon-delimited XLSX export to unlock insights.
+              </p>
+            </div>
+          </template>
+
+          <div class="space-y-4 text-sm text-blue-100">
+            <p>
+              Processing happens entirely in your browser. No trip data ever
+              leaves your device.
+            </p>
+            <ul class="space-y-2 leading-relaxed">
+              <li class="flex items-start gap-2">
+                <UIcon
+                  name="i-lucide-check"
+                  class="mt-0.5 h-4 w-4 text-primary-400"
+                />
+                <span
+                  >Supports MyPeugeot XLSX exports with semicolon
+                  separation.</span
+                >
+              </li>
+              <li class="flex items-start gap-2">
+                <UIcon
+                  name="i-lucide-check"
+                  class="mt-0.5 h-4 w-4 text-primary-400"
+                />
+                <span
+                  >Automatically plots departure and destination coordinates on
+                  the map.</span
+                >
+              </li>
+              <li class="flex items-start gap-2">
+                <UIcon
+                  name="i-lucide-check"
+                  class="mt-0.5 h-4 w-4 text-primary-400"
+                />
+                <span
+                  >Summaries refresh instantly for each day you explore.</span
+                >
+              </li>
+            </ul>
+
+            <UButton
+              block
+              size="lg"
+              color="primary"
+              icon="i-lucide-folder-up"
+              :loading="isLoading"
+              @click="triggerFileInput"
+            >
+              Browse files
+            </UButton>
+
+            <input
+              ref="fileInput"
+              type="file"
+              class="hidden"
+              accept=".xlsx,.xls"
+              @change="handleFileChange"
+            />
+
+            <p class="text-xs text-blue-300">
+              Expected headers: Date, Time of Departure, Time of Arrival, Time
+              (hr:min), Address of Departure, Destination Address, Distance
+              (km), Mileage on odometer (km), Avg. consumption (l/100km), Price
+              of fuel (SGD/l), Cost (SGD), Category.
+            </p>
+          </div>
+        </UCard>
+      </section>
+
+      <UAlert
+        v-if="errorMessage"
+        icon="i-lucide-alert-triangle"
+        color="error"
+        variant="soft"
+        class="border border-red-500/30 bg-red-500/10 text-red-100"
+      >
+        {{ errorMessage }}
+      </UAlert>
+
+      <section
+        v-if="trips.length"
+        class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]"
+      >
+        <UCard class="border border-white/5 bg-white/5 backdrop-blur">
+          <template #header>
+            <h3 class="text-base font-semibold text-white">Travel dates</h3>
           </template>
 
           <div class="flex flex-col gap-2">
@@ -541,156 +632,176 @@ function formatCoords(coords: Coordinates): string {
               class="justify-between"
               @click="selectedDate = date"
             >
-              <span>
-                {{ date }}
-              </span>
-              <span class="text-sm text-muted">
+              <span>{{ date }}</span>
+              <span class="text-sm text-blue-200">
                 ({{ tripCountByDate[date] ?? 0 }} trips)
               </span>
             </UButton>
           </div>
         </UCard>
 
-        <UCard v-if="filteredTrips.length">
-          <template #header>
-            <h3 class="text-base font-semibold">Summary</h3>
-          </template>
-
-          <ul class="space-y-3">
-            <li class="flex items-center justify-between">
-              <span class="text-sm text-muted"> Total distance </span>
-              <span class="font-medium">
-                {{ distanceTotal.toFixed(1) }} km
-              </span>
-            </li>
-            <li class="flex items-center justify-between">
-              <span class="text-sm text-muted"> Fuel cost </span>
-              <span class="font-medium">
-                {{ hasCost ? `${costTotal.toFixed(2)} SGD` : "–" }}
-              </span>
-            </li>
-            <li class="flex items-center justify-between">
-              <span class="text-sm text-muted"> Avg. consumption </span>
-              <span class="font-medium">
-                {{
-                  hasConsumption && avgConsumption !== null
-                    ? `${avgConsumption.toFixed(2)} l/100km`
-                    : "–"
-                }}
-              </span>
-            </li>
-          </ul>
-        </UCard>
-      </div>
-
-      <div class="space-y-4">
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="text-base font-semibold">Map</h3>
-              <span v-if="selectedDate" class="text-sm text-muted">
-                Showing {{ filteredTrips.length }} trip(s)
-              </span>
-            </div>
-          </template>
-
-          <div class="overflow-hidden rounded-md">
-            <ClientOnly>
-              <template #fallback>
-                <div
-                  class="flex h-[480px] items-center justify-center bg-muted/40 text-sm text-muted"
-                >
-                  Loading map…
-                </div>
-              </template>
-
-              <LMap
-                v-if="filteredTrips.length"
-                :center="mapCenter"
-                :zoom="mapZoom"
-                :use-global-leaflet="false"
-                style="height: 480px"
-              >
-                <LTileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-
-                <LPolyline
-                  v-for="(segment, index) in mapSegments"
-                  :key="`segment-${index}`"
-                  :lat-lngs="segment"
-                  color="#2563eb"
-                  :weight="4"
-                  :opacity="0.6"
-                />
-
-                <LCircleMarker
-                  v-for="point in mapPoints"
-                  :key="point.key"
-                  :lat-lng="[point.coords.lat, point.coords.lng]"
-                  :radius="point.type === 'departure' ? 10 : 8"
-                  :color="point.type === 'departure' ? '#22c55e' : '#ef4444'"
-                  :fill-color="
-                    point.type === 'departure' ? '#22c55e' : '#ef4444'
-                  "
-                  :fill-opacity="0.75"
-                >
-                  <LPopup>
-                    <div class="space-y-1 text-sm">
-                      <p class="font-semibold">
-                        {{ point.title }}
-                      </p>
-                      <p class="text-muted">
-                        {{ point.subtitle }}
-                      </p>
-                      <p>
-                        Distance:
-                        {{
-                          point.trip.distanceKm !== null
-                            ? `${point.trip.distanceKm.toFixed(1)} km`
-                            : "–"
-                        }}
-                      </p>
-                      <p>Category: {{ point.trip.category || "–" }}</p>
-                    </div>
-                  </LPopup>
-                </LCircleMarker>
-              </LMap>
-
-              <div
-                v-else
-                class="flex h-[480px] items-center justify-center bg-muted/40 text-sm text-muted"
-              >
-                Select a date with trips to view the map.
+        <div class="space-y-6">
+          <UCard class="border border-white/5 bg-white/5 backdrop-blur">
+            <template #header>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="text-base font-semibold text-white">
+                  Daily overview
+                </h3>
+                <UBadge color="primary" variant="soft">
+                  {{ selectedDate || "All dates" }}
+                </UBadge>
               </div>
-            </ClientOnly>
-          </div>
-        </UCard>
+            </template>
 
-        <UCard v-if="filteredTrips.length">
-          <template #header>
-            <h3 class="text-base font-semibold">
-              Trips for {{ selectedDate || "all dates" }}
-            </h3>
-          </template>
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div class="rounded-xl bg-blue-500/10 p-4">
+                <p class="text-sm text-blue-200">Total distance</p>
+                <p class="text-2xl font-semibold text-white">
+                  {{ distanceTotal.toFixed(1) }} km
+                </p>
+              </div>
+              <div class="rounded-xl bg-blue-500/10 p-4">
+                <p class="text-sm text-blue-200">Fuel cost</p>
+                <p class="text-2xl font-semibold text-white">
+                  {{ hasCost ? `${costTotal.toFixed(2)} SGD` : "–" }}
+                </p>
+              </div>
+              <div class="rounded-xl bg-blue-500/10 p-4">
+                <p class="text-sm text-blue-200">Avg. consumption</p>
+                <p class="text-2xl font-semibold text-white">
+                  {{
+                    hasConsumption && avgConsumption !== null
+                      ? `${avgConsumption.toFixed(2)} l/100km`
+                      : "–"
+                  }}
+                </p>
+              </div>
+            </div>
+          </UCard>
 
-          <UTable :data="tableRows" />
-        </UCard>
+          <UCard class="border border-white/5 bg-white/5 backdrop-blur">
+            <template #header>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="text-base font-semibold text-white">Map</h3>
+                <span class="text-sm text-blue-200">
+                  Showing {{ filteredTrips.length }} trip(s)
+                </span>
+              </div>
+            </template>
 
-        <div
-          v-else
-          class="rounded-md border border-dashed border-muted p-8 text-center text-sm text-muted"
-        >
-          Select a date to view trip details.
+            <div class="overflow-hidden rounded-xl border border-white/10">
+              <ClientOnly>
+                <template #fallback>
+                  <div
+                    class="flex h-[460px] items-center justify-center bg-slate-800/60 text-sm text-blue-200"
+                  >
+                    Loading map…
+                  </div>
+                </template>
+
+                <LMap
+                  v-if="filteredTrips.length"
+                  :center="mapCenter"
+                  :zoom="mapZoom"
+                  :use-global-leaflet="false"
+                  style="height: 460px"
+                >
+                  <LTileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+
+                  <LPolyline
+                    v-for="(segment, index) in mapSegments"
+                    :key="`segment-${index}`"
+                    :lat-lngs="segment"
+                    color="#38bdf8"
+                    :weight="4"
+                    :opacity="0.7"
+                  />
+
+                  <LCircleMarker
+                    v-for="point in mapPoints"
+                    :key="point.key"
+                    :lat-lng="[point.coords.lat, point.coords.lng]"
+                    :radius="point.type === 'departure' ? 10 : 8"
+                    :color="point.type === 'departure' ? '#22d3ee' : '#fb7185'"
+                    :fill-color="
+                      point.type === 'departure' ? '#22d3ee' : '#fb7185'
+                    "
+                    :fill-opacity="0.75"
+                  >
+                    <LPopup>
+                      <div class="space-y-1 text-sm">
+                        <p class="font-semibold text-slate-800">
+                          {{ point.title }}
+                        </p>
+                        <p class="text-slate-500">{{ point.subtitle }}</p>
+                        <p>
+                          Distance:
+                          {{
+                            point.trip.distanceKm !== null
+                              ? `${point.trip.distanceKm.toFixed(1)} km`
+                              : "–"
+                          }}
+                        </p>
+                        <p>Category: {{ point.trip.category || "–" }}</p>
+                      </div>
+                    </LPopup>
+                  </LCircleMarker>
+                </LMap>
+
+                <div
+                  v-else
+                  class="flex h-[460px] items-center justify-center bg-slate-800/60 text-sm text-blue-200"
+                >
+                  Select a date with trips to view the map.
+                </div>
+              </ClientOnly>
+            </div>
+          </UCard>
+
+          <UCard class="border border-white/5 bg-white/5 backdrop-blur">
+            <template #header>
+              <h3 class="text-base font-semibold text-white">
+                Trips for {{ selectedDate || "all dates" }}
+              </h3>
+            </template>
+
+            <UTable :data="tableRows" />
+          </UCard>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div
-      v-else
-      class="rounded-md border border-dashed border-muted p-12 text-center text-sm text-muted"
-    >
-      Upload a trip log to visualize your journeys.
-    </div>
-  </UContainer>
+      <UCard
+        v-else
+        class="border border-dashed border-white/10 bg-white/5 backdrop-blur text-center text-blue-100"
+      >
+        <div class="space-y-4 py-12">
+          <UIcon
+            name="i-lucide-route"
+            class="mx-auto h-10 w-10 text-primary-400"
+          />
+          <h3 class="text-xl font-semibold text-white">
+            Upload your first trip log
+          </h3>
+          <p class="text-sm text-blue-200">
+            Bring your MyPeugeot XLSX export to unlock a personalized map and
+            insights dashboard.
+          </p>
+          <div class="flex justify-center gap-3">
+            <UButton
+              color="primary"
+              icon="i-lucide-upload"
+              @click="triggerFileInput"
+            >
+              Upload log
+            </UButton>
+            <UButton variant="ghost" color="primary" @click="triggerFileInput">
+              Learn more
+            </UButton>
+          </div>
+        </div>
+      </UCard>
+    </UContainer>
+  </div>
 </template>
